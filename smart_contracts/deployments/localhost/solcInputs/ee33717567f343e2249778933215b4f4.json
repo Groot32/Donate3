@@ -1,0 +1,38 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/Donate3.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.9;\n\nimport \"./DonateEntry.sol\";\n\ncontract Donate3 {\n    event EntryCreated(address donateEntry, address owner);\n\n    function createEntry(string memory cid, uint256 goal) public returns (address) {\n        DonateEntry donateEntry = new DonateEntry(msg.sender, cid, goal);\n        emit EntryCreated(address(donateEntry), msg.sender);\n        return address(donateEntry);\n    }\n}\n"
+    },
+    "contracts/DonateEntry.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.9;\n\nerror NotOwner();\nerror ZeroGoal();\nerror ZeroDonation();\n\ncontract DonateEntry {\n    event Funded(address donor, uint256 amount, string data);\n\n    address private immutable i_owner;\n    uint256 private immutable i_goal;\n    string private s_cid;\n    uint256 private s_amountRecieved;\n\n    modifier onlyOwner() {\n        if (msg.sender != i_owner) revert NotOwner();\n        _;\n    }\n\n    constructor(\n        address owner,\n        string memory cid,\n        uint256 goal\n    ) {\n        if (goal == 0) {\n            revert ZeroGoal();\n        }\n        i_owner = owner;\n        s_cid = cid;\n        i_goal = goal;\n    }\n\n    function fund() public payable {\n        if (msg.value == 0) {\n            revert ZeroDonation();\n        }\n        s_amountRecieved += msg.value;\n        emit Funded(msg.sender, msg.value, string(msg.data));\n    }\n\n    function withdraw() public onlyOwner {\n        (bool success, ) = i_owner.call{value: address(this).balance}(\"\");\n        require(success);\n    }\n\n    function getOwner() public view returns (address) {\n        return i_owner;\n    }\n\n    function getCid() public view returns (string memory) {\n        return s_cid;\n    }\n\n    function getGoal() public view returns (uint256) {\n        return i_goal;\n    }\n\n    function getAmountRecieved() public view returns (uint256) {\n        return s_amountRecieved;\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

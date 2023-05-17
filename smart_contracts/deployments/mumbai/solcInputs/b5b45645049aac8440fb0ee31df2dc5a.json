@@ -1,0 +1,38 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/Donate3.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.9;\n\nimport \"./DonateEntry.sol\";\n\ncontract Donate3 {\n    event EntryCreated(address donateEntry, address owner);\n\n    // mapping of owner => addresses of DonateEntry.sol\n    mapping(address => address[]) entries;\n    // contract addresses of DonateEntry.sol\n    address[] private donateEntries;\n\n    function createEntry(\n        string memory cid,\n        // string memory title,\n        // string memory description,\n        uint256 goal\n    ) public returns (address) {\n        // DonateEntry donateEntry = new DonateEntry(msg.sender, title, description, goal);\n        DonateEntry donateEntry = new DonateEntry(msg.sender, cid, goal);\n        entries[msg.sender].push(address(donateEntry));\n        donateEntries.push(address(donateEntry));\n        emit EntryCreated(address(donateEntry), msg.sender);\n        return address(donateEntry);\n    }\n\n    function getEntry(address ownerAddress) public view returns (address[] memory) {\n        return (entries[ownerAddress]);\n    }\n\n    function getDonateEntry(uint256 index) public view returns (address) {\n        return (donateEntries[index]);\n    }\n\n    function getDonateEntriesLength() public view returns (uint256) {\n        return (donateEntries.length);\n    }\n}\n"
+    },
+    "contracts/DonateEntry.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.9;\n\nerror NotOwner();\nerror ZeroGoal();\nerror ZeroDonation();\n\ncontract DonateEntry {\n    event Funded(address donor, uint256 amount, string data);\n\n    struct Entry {\n        uint256 amount;\n        string data;\n    }\n\n    address private immutable i_owner;\n    // string private s_title;\n    // string private s_description;\n    string private s_cid;\n    uint256 private immutable i_goal;\n    uint256 private s_amountRecieved;\n    address[] private s_donors;\n    mapping(address => Entry[]) private s_entries;\n\n    modifier onlyOwner() {\n        if (msg.sender != i_owner) revert NotOwner();\n        _;\n    }\n\n    constructor(\n        address owner,\n        string memory cid,\n        // string memory title,\n        // string memory description,\n        uint256 goal\n    ) {\n        if (goal == 0) {\n            revert ZeroGoal();\n        }\n        i_owner = owner;\n        s_cid = cid;\n        // s_title = title;\n        // s_description = description;\n        i_goal = goal;\n    }\n\n    function fund() public payable {\n        if (msg.value == 0) {\n            revert ZeroDonation();\n        }\n        s_amountRecieved += msg.value;\n        if (s_entries[msg.sender].length == 0) {\n            s_donors.push(msg.sender);\n        }\n        s_entries[msg.sender].push(Entry(msg.value, string(msg.data)));\n        emit Funded(msg.sender, msg.value, string(msg.data));\n        // s_entries[msg.sender].push(msg.value => string(msg.data));\n        // s_entries[msg.sender][msg.value] = string(msg.data);\n    }\n\n    function withdraw() public onlyOwner {\n        (bool success, ) = i_owner.call{value: address(this).balance}(\"\");\n        require(success);\n    }\n\n    function getOwner() public view returns (address) {\n        return i_owner;\n    }\n\n    function getCid() public view returns (string memory) {\n        return s_cid;\n    }\n\n    // function getTitle() public view returns (string memory) {\n    //     return s_title;\n    // }\n\n    // function getDescription() public view returns (string memory) {\n    //     return s_description;\n    // }\n\n    function getGoal() public view returns (uint256) {\n        return i_goal;\n    }\n\n    function getAmountRecieved() public view returns (uint256) {\n        return s_amountRecieved;\n    }\n\n    function getDonor(uint256 index) public view returns (address) {\n        return s_donors[index];\n    }\n\n    function getDonorsLength() public view returns (uint256) {\n        return s_donors.length;\n    }\n\n    function getEntry(address donorAddress) public view returns (Entry[] memory) {\n        return s_entries[donorAddress];\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
